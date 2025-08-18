@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Typography } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { Box, Typography } from '@mui/material';
 import fetchWeather from '../api/weatherApi';
 
 const Weather = () => {
@@ -22,25 +22,20 @@ const Weather = () => {
   }, []);
 
   return (
-    <div>
+    <Box>
       {weather ? (
-        <div>
-          <Typography variant="h6">
-            <h1>Santiago, Chile</h1>
-          </Typography>
-          <Typography variant="p">
-            <p>Actual: {weather.temp} °C</p>
-            <p>Mínima: {weather.tempMin} °C</p>
-            <p>Máxima: {weather.tempMax} °C</p>
-          </Typography>
-        </div>
-
+        <>
+          <Typography variant="h6" component="h1">Santiago, Chile</Typography>
+          <Typography variant="body1" component="p">Actual: {weather.temp} °C</Typography>
+          <Typography variant="body2" component="p">Mínima: {weather.tempMin} °C</Typography>
+          <Typography variant="body2" component="p">Máxima: {weather.tempMax} °C</Typography>
+        </>
       ) : (
-        <Typography variant="p">
-          <p>Cargando datos del clima...</p>
+        <Typography variant="p" component="p">
+            Cargando datos del clima...
         </Typography>
       )}
-    </div>
+    </Box>
   );
 };
 

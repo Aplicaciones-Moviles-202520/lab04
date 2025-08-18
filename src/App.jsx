@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
-import { AppBar, Toolbar, Typography, Button, IconButton, Drawer, List, ListItem, ListItemText, ListItemIcon, TextField, Box } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, IconButton, Drawer, List, ListItem, ListItemText, ListItemIcon, ListItemButton, TextField, Box } from '@mui/material';
 import { Card, CardContent } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import HomeIcon from '@mui/icons-material/Home';
@@ -11,9 +11,9 @@ import fetchWeather from './api/weatherApi';
 
 function Home() {
   return (
-    <Card sx={{ margin: 2, maxWidth: 600, mx: "auto" }}>
+    <Card sx={{ m: 2, maxWidth: 600, mx: "auto" }}>
       <CardContent>
-        <Typography variant="h5" component="div" gutterBottom>
+        <Typography variant="h5" component="h2" gutterBottom>
           Información del Clima
         </Typography>
         <Weather />
@@ -104,23 +104,31 @@ function App() {
         }}
       >
         <List>
-          <ListItem button component={Link} to="/" onClick={toggleDrawer}>
-            <ListItemIcon>
-              <HomeIcon />
-            </ListItemIcon>
-            <ListItemText primary="Inicio" />
+          <ListItem disablePadding>
+            <ListItemButton component={Link} to="/" onClick={toggleDrawer}>
+              <ListItemIcon>
+                <HomeIcon />
+              </ListItemIcon>
+              <ListItemText primary="Inicio" />
+            </ListItemButton>
           </ListItem>
-          <ListItem button component={Link} to="/search" onClick={toggleDrawer}>
-            <ListItemIcon>
-              <SearchIcon />
-            </ListItemIcon>
-            <ListItemText primary="Buscar" />
+
+          <ListItem disablePadding>
+            <ListItemButton component={Link} to="/search" onClick={toggleDrawer}>
+              <ListItemIcon>
+                <SearchIcon />
+              </ListItemIcon>
+              <ListItemText primary="Buscar" />
+            </ListItemButton>
           </ListItem>
-          <ListItem button component={Link} to="/hello" onClick={toggleDrawer}>
-            <ListItemIcon>
-              <AddIcon />
-            </ListItemIcon>
-            <ListItemText primary="Hola mundo" />
+
+          <ListItem disablePadding>
+            <ListItemButton component={Link} to="/hello" onClick={toggleDrawer}>
+              <ListItemIcon>
+                <AddIcon />
+              </ListItemIcon>
+              <ListItemText primary="Hola mundo" />
+            </ListItemButton>
           </ListItem>
         </List>
       </Drawer>
