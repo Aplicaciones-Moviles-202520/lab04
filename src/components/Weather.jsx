@@ -1,50 +1,83 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, CircularProgress } from '@mui/material';
+import fetchWeather from '../api/weatherApi';
 
 const Weather = () => {
-  const [weather, setWeather] = useState(null);
+  const [weather, setWeather] = useState(null);     // objeto de datos
+  const [loading, setLoading] = useState(true);     // estado de carga
+  const [error, setError] = useState('');           // mensaje de error
 
   useEffect(() => {
-    const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY; // Acceder a la variable de entorno
+    let isMounted = true;
 
-    const fetchWeather = async () => {
+    (async () => {
       try {
-        // Paso 1: Obtener coordenadas de Santiago de Chile
-        const geocodeUrl = `https://api.openweathermap.org/geo/1.0/direct?q=Santiago,CL&limit=1&appid=${apiKey}`;
-        const geocodeResponse = await axios.get(geocodeUrl);
-        const { lat, lon } = geocodeResponse.data[0];
+        setLoading(true);
+        setError('');
+        const temps = await fetchWeather('Santiago de Chile'); // Open‑Meteo version
 
-        // Paso 2: Usar coordenadas para obtener el clima actual
-        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
-        const weatherResponse = await axios.get(weatherUrl);
-        const { temp, temp_min, temp_max } = weatherResponse.data.main;
+        if (!isMounted) return;
 
-        setWeather({
-          temp: temp.toFixed(1),
-          tempMin: temp_min.toFixed(1),
-          tempMax: temp_max.toFixed(1)
-        });
-      } catch (error) {
-        console.error('Failed to fetch weather data:', error);
+        if (temps) {
+          setWeather(temps);
+        } else {
+          setError('No se pudo obtener el clima.');
+        }
+      // eslint-disable-next-line no-unused-vars
+      } catch (e) {
+        if (!isMounted) return;
+        setError('Ocurrió un error al obtener el clima.');
+      } finally {
+        if (isMounted) setLoading(false);
       }
-    };
+    })();
 
-    fetchWeather();
+    return () => { isMounted = false; };
   }, []);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <CircularProgress size={20} />
+        <Typography variant="body1" component="p">
+          Cargando datos del clima...
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Typography variant="body1" component="p" color="error">
+        {error}
+      </Typography>
+    );
+  }
+
+  if (!weather) return null;
+
+  const {
+    label,                // "Santiago, Región Metropolitana, Chile"
+    temp,                 // actual (aprox.)
+    tempMinForecast,      // mínima pronosticada hoy
+    tempMaxForecast,      // máxima pronosticada hoy
+  } = weather;
 
   return (
     <Box>
-      {weather ? (
-        <>
-          <Typography variant="h6" component="h1">Santiago, Chile</Typography>
-          <Typography variant="body1" component="p">Actual: {weather.temp} °C</Typography>
-          <Typography variant="body2" component="p">Mínima: {weather.tempMin} °C</Typography>
-          <Typography variant="body2" component="p">Máxima: {weather.tempMax} °C</Typography>
-        </>
-      ) : (
-        <Typography variant="p" component="p">
-            Cargando datos del clima...
+      <Typography variant="h6" component="h1" gutterBottom>
+        {label || 'Santiago, Chile'}
+      </Typography>
+
+      {temp != null && (
+        <Typography variant="body1" component="p">
+          Actual: {temp} °C
+        </Typography>
+      )}
+
+      {(tempMinForecast != null || tempMaxForecast != null) && (
+        <Typography variant="body2" component="p">
+          Mín. pronosticada hoy: {tempMinForecast ?? '—'} °C — Máx. pronosticada hoy: {tempMaxForecast ?? '—'} °C
         </Typography>
       )}
     </Box>
