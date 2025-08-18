@@ -1,18 +1,10 @@
 # Laboratorio 2: Introducción al desarrollo móvil con React y MUI
 
-En este laboratorio veremos una aplicación de clima construida utilizando lo básico de React y MUI. La aplicación utiliza la API de OpenWeather para acceder a información climática.
+En este laboratorio veremos una aplicación de clima construida utilizando lo básico de React y MUI. La aplicación utiliza la API de [Open-Meteo](https://open-meteo.com/) para acceder a información climática. Esta API tiene posibilidad de [uso gratuito](https://open-meteo.com/en/pricing), sin registro de usuario, lo cual es sumamente beneficioso para nuestra experiencia de laboratorio.
 
 ## Pasos iniciales
 
-El primer paso en este laboratorio es crear una cuenta en OpenWeather, a través del portal openweathermap.org. Puedes usar para esto tu correo personal o institucional. Luego, ingresando al portal de OpenWeather, puedes pinchar en el menú en donde aparece tu login arriba a la derecha en la _top bar_ del sitio, y allí acceder a la opción "My API keys". Ingresando allí, verás la API Key que OpenWeather ha creado automáticamente para tu uso gratuito (máximo 1000 consultas diarias).
-
-A continuación, crea un archivo llamado `.env` en el directorio raíz de este repositorio. En dicho archivo ingresa el siguiente texto:
-
-```sh
-VITE_OPENWEATHER_API_KEY=#[copia y pega aquí la API Key y elimina los corchetes y el caracter gato]
-```
-
-Luego, puedes ejecutar:
+El primer paso es ejecutar:
 
 ```sh
 yarn install
@@ -41,31 +33,9 @@ Los scripts relevantes son:
 * `lint`: Ejecuta linters para validar que el código cumpla estándares de codificación, y normas de calidad.
 * `preview`: Permite previsualizar la aplicación después que ha sido construida con `build`.
 
-## Uso de API keys con aplicaciones de frontend
-
-Las APIs públicas remotas como la de OpenWeather requieren el uso de una llave (key) que queda asociada a alguna cuenta de usuario para fines de facturación y monitoreo. Lo mismo ocurre con otras APIs web como la de reCaptcha, utilizada para evitar el abuso de la aplicación web por parte de robots, y otras APIs de proveedores como por ejemplo OpenAI, Google Cloud Platform, Amazon Web Services, etc. Las API Keys deben tener un trato similar al de las contraseñas. Si una API key se deja expuesta en el código del frontend puede ser robada por potencialmente cualquier usuario (atacante) que tenga acceso a la aplicación, y el atacante podría usar las APIs (con sus consiguientes costos para los titulares) en forma fraudulenta. 
-
-¿Cuáles son las soluciones a este problema?
-
-1. Encapsular las API keys: Para esto, se crea un servicio intermedio. Tu aplicación envía solicitudes a un servidor backend que tú controlas, y este servidor realiza las solicitudes a la API externa. Esto te permite mantener las claves API fuera del cliente y aplicar técnicas de seguridad adicionales, como la autenticación de usuarios y la validación de sesiones.
-2. Si el proveedor de la API lo permite, se puede definir una configuración para restringir las solicitudes basadas en el origen de la llamada, por ejemplo, rangos de direcciones IP que uno controla (p.ej., si la aplicación estará disponible solamente en alguna intranet o a través de una VPN), dominios de referencia, es decir referentes HTTP desde los cuales se pueden hacer llamadas a la API. Esto ayuda a asegurar que solo los dominios que tú especificas puedan hacer solicitudes. 
-3. Si el proveedor de la API lo permite, se pueden definir claves con las que solamente se puedan realizar operaciones de lectura de datos. Sin embargo, esto no resuelve problemas como los de garantizar la privacidad de datos, o los abusos que se pueden dar con la realización indiscriminada de peticiones a la API.
-
-**Disclaimer:** En este ejercicio, usaremos claves en el frontend únicamente por razones prácticas, dado que la API que utilizaremos es gratuita y tiene un límite de peticiones diarias que estamos dispuestos a aceptar para nuestros fines. Si la aplicación fuera de producción y tuviéramos que contratar la API con nuetra tarjeta de crédito, entonces lo más seguro sería optar por la alternativa (1). 
-
-## API keys con variables de entorno en VITE
-
-Te recomendamos leer este [diálogo con ChatGPT](https://chatgpt.com/share/4bae19a6-d438-49a6-b8d8-e162cca05832) para comprender mejor conceptualmente qué son las variables de entorno y cómo se usan. En nuestra aplicación hemos definido un archivo `.env` y éste es automáticamente cargado por la tarea `dev` de Vite. Si abres el archivo `src/components/Weather.jsx` verás algo como:
-
-```es6
-const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
-```
-
-Todas las variables de entorno que se utilizan con Vite deben tener el prefijo `VITE_`. Vite busca estas variables en `.env`, en el entorno de las variables exportadas por la consola (_shell_), y las deja a disposición en el módulo `meta.env`. Cuando se ejecuta la tarea `build` de Vite, el código es minificado y los accesos a las variables desde el módulo `meta.env` son eliminados y reemplazados por los valores literales de las variables. Esto es lo que en definitiva facilita que un atacante pueda robar las API keys si se utilizan variables de entorno para manejarlas.
-
 ## Descripción de la Aplicación React
 
-Nuestra aplicación React en su primera iteración es bastante simple y se limita a llamar a la API de OpenWeather para realizar un par de consultas. Primero, resuelve las coordenadas GPS de Santiago de Chile usando una API de "Geocoder", y luego, con estas coordenadas, llama a la API de clima de OpenWeather utlizando las funciones de una biblioteca llamada Axios ([https://axios-http.com/docs/intro](https://axios-http.com/docs/intro)), para obtener la información del clima actual. Axios permite realizar peticiones XHR a APIs remotas, con funcionalidad similar a la Fetch API estándar que implementan los navegadores web, sin embargo, Axios provee una serie de conveniencias:
+Nuestra aplicación React en su primera iteración es bastante simple y se limita a llamar a la API de Open-Meteo para realizar un par de consultas. Resuelve las coordenadas GPS de Santiago de Chile usando una API de "Geocoder", y luego, con estas coordenadas, llama a la API de clima utlizando las funciones de una biblioteca llamada Axios ([https://axios-http.com/docs/intro](https://axios-http.com/docs/intro)), para obtener la información del clima actual. Axios permite realizar peticiones XHR a APIs remotas, con funcionalidad similar a la Fetch API estándar que implementan los navegadores web, sin embargo, Axios provee una serie de conveniencias:
 
 * Convierte automáticamente respuestas JSON de la API de backend directamente a objetos Javascript. De otro modo, es necesario llamar a `JSON.parse` en forma manual para convertir respuestas JSON a objetos.
 * Simplifica el paso de parámetros a las APIs remotas.
@@ -131,16 +101,21 @@ El componente `Home` incluye algunos componentes de MUI, como el de [`Card`](htt
 
 **Componente Weather**
 
-En este componente hay dos hooks de React relevantes que son instanciados:
+En este componente hay tres variables de estado (hook `useState` de React) relevantes que son instanciadas:
 
-* `state` (variable `weather`): Esta variable contiene el objeto actual de clima cargado mediante la API de OpenWeather.
-* `effect`: Este hook que no recibe ningún objeto para vigilar en su arreglo de argumentos, y ejecuta _automáticamente y una sola vez cuando se termina de renderizar_ el componente `Weather`. La función asíncrona que ejecuta el hook es `fetchWeather`. Podemos ver en ella las llamadas a la API remota y el procesamiento de resultados.
+* `weather`: Guarda el objeto con la información meteorológica obtenida desde la API (temperatura actual, mínima y máxima observada, mínima y máxima pronosticada, y etiqueta de ubicación). Inicialmente es `null`, y se actualiza una vez que la petición a la API se completa exitosamente.
+* `loading`: Bandera booleana que indica si el componente está en proceso de obtener los datos desde la API. Es `true` al inicio de la carga y vuelve a `false` cuando la petición finaliza (ya sea con éxito o con error). Permite mostrar un spinner o mensaje de `cargando`.
+* `error`: Almacena un mensaje de error (`string`) cuando ocurre algún problema en la obtención de los datos. Inicialmente es '' (vacío). Se usa para informar al usuario cuando no se puede mostrar la información del clima.
+
+**Cliente de Open-Meteo**
+
+Las operaciones clientes de Open-Meteo las encapsulamos en un módulo llamado `weatherApi`, ubicado en `src/api/weatherApi.js`. En la función `fetchWeather` al final de este módulo podrás ver cómo se resuelven las coordenadas de una ubicación usando geocoder, y cómo después se obtienen los valores del tiempo para la ubicación.
 
 ## Experimenta con el código
 
-1. Puedes partir usando mensajes `console.debug` en el componente `Weather` para desplegar en consola las respuestas que se obtienen al llamar a las APIs de geocoder y clima remotas.
-2. Luego, puedes modificar el request a geocoder y cambiar la ubicación geográfica, y verificar los resultados.
-3. Puedes personalizar el componente `Search` declarado en `App.jsx`. Incorpora un [campo de texto](https://mui.com/material-ui/react-text-field/) para búsqueda, agrega un hook de `useEffect` que vigile el campo de texto, y luego invoque a las APIs de geocoder y clima, y despliegue en la consola el resultado de clima de acuerdo con la ubicación geográfica tipeada en el campo de texto.
-4. Puedes hacer _refactoring_ del código, y mover la función `fetchWeather` fuera del hook, de manera que pueda ser compartida por los componentes `Home` y `Search`. Puedes modificar esta función para que reciba como parámetro un string con el nombre de la ubicación geográfica que se desea consultar.
+1. Puedes partir usando mensajes `console.debug` en el componente `Weather` para desplegar en consola la respuesta que se obtiene al llamar a la API de clima (variable `temps`). También podrías revisar cómo están implementadas las llamadas a la API. en `src/api/weatherApi.js`.
+2. Luego, en `Weather` puedes modificar la ubicación geográfica, y verificar los resultados.
+3. Puedes personalizar el componente `Search` declarado en `App.jsx`. Incorpora un [campo de texto](https://mui.com/material-ui/react-text-field/) para búsqueda, agrega un hook de `useEffect` que vigile la variable de estado `city`, luego invoque a las APIs de clima, y despliegue en la consola el resultado de clima de acuerdo con la ubicación geográfica tipeada en el campo de texto. 
+4. Si quieres hacer algo más avanzado aún, puedes crear un componente `SearchResult` que muestre el resultado de la búsqueda de `Search` (poniéndolo como hijo de este último) al existir algún resultado de búsqueda. El componente `Search` lo puedes mover fuera de `App` y lo puedes poner bajo el directorio de `components`.
 5. Puedes ajustar los estilos utilizados en la aplicación variando colores en `src/theme.js`.
 
