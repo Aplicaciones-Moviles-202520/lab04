@@ -113,9 +113,9 @@ Las operaciones clientes de Open-Meteo las encapsulamos en un módulo llamado `w
 
 ## Experimenta con el código
 
-1. Puedes partir usando mensajes `console.debug` en el componente `Weather` para desplegar en consola la respuesta que se obtiene al llamar a la API de clima (variable `temps`). También podrías revisar cómo están implementadas las llamadas a la API. en `src/api/weatherApi.js`.
+1. Puedes partir usando mensajes `console.debug` en el componente `Weather` para desplegar en consola la respuesta que se obtiene al llamar a la API de clima (variable `temps`). También podrías revisar cómo están implementadas las llamadas a la API en `src/api/weatherApi.js`.
 2. Luego, en `Weather` puedes modificar la ubicación geográfica, y verificar los resultados.
-3. Puedes personalizar el componente `Search` declarado en `App.jsx`. Incorpora un [campo de texto](https://mui.com/material-ui/react-text-field/) para búsqueda, agrega un hook de `useEffect` que vigile la variable de estado `city`, luego invoque a las APIs de clima, y despliegue en la consola el resultado de clima de acuerdo con la ubicación geográfica tipeada en el campo de texto. 
+3. Puedes personalizar el componente `Search` declarado en `App.jsx`. Incorpora un [campo de texto](https://mui.com/material-ui/react-text-field/) para la búsqueda, asócialo a una variable de estado (p.ej., `useState(location)`), y luego, agrega un hook de `useEffect` que vigile `location`, invoque a las APIs de clima (usa `fetchWeather` del módulo `weatherApi`), y despliegue en la consola el resultado de clima (`console.log`) de acuerdo con la ubicación geográfica tipeada en el campo de texto. 
 4. Si quieres hacer algo más avanzado aún, puedes crear un componente `SearchResult` que muestre el resultado de la búsqueda de `Search` (poniéndolo como hijo de este último) al existir algún resultado de búsqueda. El componente `Search` lo puedes mover fuera de `App` y lo puedes poner bajo el directorio de `components`.
 5. Puedes ajustar los estilos utilizados en la aplicación variando colores en `src/theme.js`.
 
