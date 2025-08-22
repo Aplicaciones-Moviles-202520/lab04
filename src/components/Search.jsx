@@ -1,51 +1,119 @@
-import { useEffect, useState } from 'react';
-import { Autocomplete, Box, TextField, Button, Typography } from '@mui/material';
+import { useEffect, useReducer } from 'react';
+import { Autocomplete, Box, TextField, Button, Typography, Stack } from '@mui/material';
 import useLocalStorageState from 'use-local-storage-state';
 import SearchIcon from '@mui/icons-material/Search';
 import { fetchWeatherMulti } from '../api/weatherApi';
 import SearchResult from './SearchResult';
 import PropTypes from 'prop-types';
 
-function Search({ isFavorite, onAddFavorite }) {
-  const [inputValue, setInputValue] = useState('');
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);   // [{ location, temps }]
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+// ----- Reducer setup -----
+const initialState = {
+  inputValue: '',
+  query: '',
+  results: [],     // [{ location, temps }]
+  loading: false,
+  error: '',
+};
 
-  // Historial de búsquedas
+const ACTIONS = {
+  SET_INPUT: 'SET_INPUT',
+  START_SEARCH: 'START_SEARCH',
+  SEARCH_SUCCESS: 'SEARCH_SUCCESS',
+  SEARCH_ERROR: 'SEARCH_ERROR',
+  RESET: 'RESET',
+};
+
+function reducer(state, action) {
+  switch (action.type) {
+    case ACTIONS.SET_INPUT:
+      return { ...state, inputValue: action.payload };
+    case ACTIONS.START_SEARCH:
+      return {
+        ...state,
+        query: action.payload, // normalized query to trigger effect
+        loading: true,
+        error: '',
+        results: [],
+      };
+    case ACTIONS.SEARCH_SUCCESS:
+      return {
+        ...state,
+        loading: false,
+        error: '',
+        results: action.payload,
+      };
+    case ACTIONS.SEARCH_ERROR:
+      return {
+        ...state,
+        loading: false,
+        results: [],
+        error: action.payload || 'Search failed.',
+      };
+    case ACTIONS.RESET:
+      // Keep inputValue to avoid wiping the field; reset the rest.
+      return {
+        ...state,
+        query: '',
+        results: [],
+        loading: false,
+        error: '',
+      };
+    default:
+      return state;
+  }
+}
+function Search({ isFavorite, onAddFavorite }) {
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  // Search history persisted in localStorage
   const [keywordList, setKeywordList] = useLocalStorageState('WeatherApp/Search/KeywordList', {
-    defaultValue: []
+    defaultValue: [],
   });
 
+  // Effect triggered when "query" changes
   useEffect(() => {
     const run = async () => {
-      setLoading(true);
-      setError('');
-      setResults([]);
-      const arr = await fetchWeatherMulti(query);
-      if (arr.length) {
-        setResults(arr);
-        if (query && !keywordList.includes(query)) {
-          setKeywordList([...keywordList, query]);
+      try {
+        const arr = await fetchWeatherMulti(state.query);
+        if (arr.length) {
+          dispatch({ type: ACTIONS.SEARCH_SUCCESS, payload: arr });
+          // Add to history if not present
+          if (state.query && !keywordList.includes(state.query)) {
+            setKeywordList([...keywordList, state.query]);
+          }
+        } else {
+          dispatch({
+            type: ACTIONS.SEARCH_ERROR,
+            payload: 'No se encontraron ubicaciones para tu búsqueda.',
+          });
         }
-      } else {
-        setError('No se encontraron ubicaciones para tu búsqueda.');
+      } catch {
+        dispatch({
+          type: ACTIONS.SEARCH_ERROR,
+          payload: 'Ocurrió un error realizando la búsqueda.',
+        });
       }
-      setLoading(false);
     };
-    if (query) run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
 
+    if (state.query) run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.query]);
+
+  // Handlers
   const handleSearch = () => {
-    const trimmed = inputValue.trim();
+    const trimmed = state.inputValue.trim();
     if (!trimmed) {
-      setError('Ingresa una ciudad para buscar.');
-      setResults([]);
+      dispatch({
+        type: ACTIONS.SEARCH_ERROR,
+        payload: 'Ingresa una ciudad para buscar.',
+      });
       return;
     }
-    setQuery(trimmed);
+    dispatch({ type: ACTIONS.START_SEARCH, payload: trimmed });
+  };
+
+  const handleClearHistory = () => {
+    setKeywordList([]);
   };
 
   return (
@@ -54,8 +122,10 @@ function Search({ isFavorite, onAddFavorite }) {
         <Autocomplete
           freeSolo
           options={keywordList}
-          value={inputValue}
-          onInputChange={(_, newInputValue) => setInputValue(newInputValue)}
+          value={state.inputValue}
+          onInputChange={(_, newInputValue) =>
+            dispatch({ type: ACTIONS.SET_INPUT, payload: newInputValue })
+          }
           renderInput={(params) => (
             <TextField
               {...params}
@@ -70,25 +140,40 @@ function Search({ isFavorite, onAddFavorite }) {
           )}
         />
 
-        <Button
-          variant="contained"
-          color="primary"
-          fullWidth
-          onClick={handleSearch}
-          startIcon={<SearchIcon />}
-          disabled={loading}
-        >
-          {loading ? 'Buscando...' : 'Buscar'}
-        </Button>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
+            onClick={handleSearch}
+            startIcon={<SearchIcon />}
+            disabled={state.loading}
+          >
+            {state.loading ? 'Buscando...' : 'Buscar'}
+          </Button>
 
-        {error && (
+          {/* Clear history button shows only if there is something to clear */}
+          {keywordList.length > 0 && (
+            <Button
+              variant="outlined"
+              color="inherit"
+              fullWidth
+              onClick={handleClearHistory}
+              disabled={state.loading}
+            >
+              Limpiar historial
+            </Button>
+          )}
+        </Stack>
+
+        {state.error && (
           <Box sx={{ mt: 1, color: 'error.main', fontSize: 14 }}>
-            {error}
+            {state.error}
           </Box>
         )}
       </Box>
 
-      {/* Grid de resultados */}
+      {/* Results grid */}
       <Box
         sx={{
           m: 2,
@@ -99,7 +184,7 @@ function Search({ isFavorite, onAddFavorite }) {
           gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
         }}
       >
-        {results.map(({ location, temps }) => {
+        {state.results.map(({ location, temps }) => {
           const label = `${location.name}${location.admin1 ? `, ${location.admin1}` : ''}, ${location.country_code}`;
           return (
             <SearchResult
@@ -114,8 +199,7 @@ function Search({ isFavorite, onAddFavorite }) {
         })}
       </Box>
 
-      {/* indicación de ordenamiento */}
-      {!!results.length && (
+      {!!state.results.length && (
         <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mb: 3 }}>
           Ordenado por población (descendente).
         </Typography>
