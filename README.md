@@ -533,8 +533,8 @@ Gracias a este diseño, los componentes de React (`Weather`, `Search`, `SearchRe
 
 ## Experimenta con el código
 
-1. En el componente `Search` puedes agregar un botón para limpiar el historial de búsqueda, el cual aparezca desplegado únicamente si hay contenido en la lista de resultados guardada en local storage.
-2. 
+1. En el componente `Search` puedes agregar un botón para limpiar el historial de búsqueda, el cual aparezca desplegado únicamente si hay contenido en la lista de resultados guardada en local storage. 
+2. También en el componente `Search`, identifica los posibles estados según las variables, define una función reductora con todos los casos (estados) relevantes que hayas podido identificar, y usa un reducer para mantener el estado del componente. Hint: `START_SEARCH`, `SEARCH_SUCCESS`, `SEARCH_ERROR`, `RESET`.
 
 ## Anexo: Lo básico de Vite
 
