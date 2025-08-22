@@ -1,30 +1,39 @@
 /* eslint-disable react/prop-types */
-import { Card, CardContent, Typography } from '@mui/material';
+import { Card, CardContent, Typography, IconButton, Stack, Tooltip } from '@mui/material';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 
-// Simple presentational component for search results
-const SearchResult = ({ city, temps }) => {
+const fmt = (v) => (v == null ? '—' : `${v} °C`);
+
+const SearchResult = ({ label, temps, isFavorite, onAddFavorite }) => {
   if (!temps) return null;
 
+  // Igual que en Weather.jsx: pronóstico si hay; si no, observado
+  const maxToday = (temps.tempMaxForecast ?? temps.tempMaxObserved);
+  const minToday = (temps.tempMinForecast ?? temps.tempMinObserved);
+
+  const fav = isFavorite?.(label);
+  const handleFav = () => {
+    if (!fav) onAddFavorite?.(label);
+  };
+
   return (
-    <Card sx={{ mt: 2 }}>
+    <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
       <CardContent>
-        <Typography variant="h6" component="h3" gutterBottom>
-          {city || temps.label}
-        </Typography>
-
-        {/* Actual */}
-        {temps.temp && (
-          <Typography variant="body1" component="p">
-            Actual: {temps.temp} °C
+        <Stack direction="row" justifyContent="space-between" alignItems="start" spacing={1}>
+          <Typography variant="h6" component="h3" gutterBottom>
+            {label}
           </Typography>
-        )}
+          <Tooltip title={fav ? 'En favoritos' : 'Agregar a favoritos'}>
+            <IconButton onClick={handleFav} aria-label="favorite" color={fav ? 'error' : 'default'}>
+              {fav ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+            </IconButton>
+          </Tooltip>
+        </Stack>
 
-        {/* Pronosticadas para el resto del día */}
-        {(temps.tempMinForecast || temps.tempMaxForecast) && (
-          <Typography variant="body2" component="p">
-            Mín. pronosticada hoy: {temps.tempMinForecast ?? '—'} °C — Máx. pronosticada hoy: {temps.tempMaxForecast ?? '—'} °C
-          </Typography>
-        )}
+        <Typography variant="body1"><strong>Actual:</strong> {fmt(temps.temp)}</Typography>
+        <Typography variant="body1"><strong>Máxima:</strong> {fmt(maxToday)}</Typography>
+        <Typography variant="body1"><strong>Mínima:</strong> {fmt(minToday)}</Typography>
       </CardContent>
     </Card>
   );

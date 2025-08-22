@@ -1,61 +1,56 @@
 import { useEffect, useState } from 'react';
-import { Autocomplete, Box, TextField, Button } from '@mui/material';
+import { Autocomplete, Box, TextField, Button, Typography } from '@mui/material';
 import useLocalStorageState from 'use-local-storage-state';
 import SearchIcon from '@mui/icons-material/Search';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import fetchWeather from '../api/weatherApi';
+import { fetchWeatherMulti } from '../api/weatherApi';
 import SearchResult from './SearchResult';
 import PropTypes from 'prop-types';
 
 function Search({ isFavorite, onAddFavorite }) {
   const [inputValue, setInputValue] = useState('');
-  const [city, setCity] = useState('');
-  const [result, setResult] = useState(null);   // holds temps or null
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);   // [{ location, temps }]
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');       // string for error message
+  const [error, setError] = useState('');
 
+  // Historial de búsquedas
   const [keywordList, setKeywordList] = useLocalStorageState('WeatherApp/Search/KeywordList', {
     defaultValue: []
   });
 
   useEffect(() => {
-    const fetchData = async () => {
+    const run = async () => {
       setLoading(true);
       setError('');
-      setResult(null);
-      const temps = await fetchWeather(city);
-      if (temps) {
-        setResult(temps);
-        // Save successful query to history
-        if (city && !keywordList.includes(city)) {
-          setKeywordList([...keywordList, city]);
+      setResults([]);
+      const arr = await fetchWeatherMulti(query);
+      if (arr.length) {
+        setResults(arr);
+        if (query && !keywordList.includes(query)) {
+          setKeywordList([...keywordList, query]);
         }
       } else {
-        setError('No se encontró la ciudad o hubo un problema al obtener el clima.');
+        setError('No se encontraron ubicaciones para tu búsqueda.');
       }
       setLoading(false);
     };
-
-    if (city) {
-      fetchData();
-    }
-    // Intentionally only depends on `city` to avoid re-fetch on keywordList update.
+    if (query) run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [city]);
+  }, [query]);
 
   const handleSearch = () => {
     const trimmed = inputValue.trim();
     if (!trimmed) {
       setError('Ingresa una ciudad para buscar.');
-      setResult(null);
+      setResults([]);
       return;
     }
-    setCity(trimmed);
+    setQuery(trimmed);
   };
 
   return (
     <>
-      <Box sx={{ m: 2, maxWidth: 600, mx: 'auto', bgcolor: 'white' }}>
+      <Box sx={{ m: 2, maxWidth: 900, mx: 'auto', bgcolor: 'white' }}>
         <Autocomplete
           freeSolo
           options={keywordList}
@@ -64,7 +59,7 @@ function Search({ isFavorite, onAddFavorite }) {
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Buscar ciudad"
+              label="Buscar ciudad (p. ej. 'Santiago, CL' o 'Columbus, OH, US')"
               variant="outlined"
               fullWidth
               sx={{ mb: 2 }}
@@ -85,6 +80,7 @@ function Search({ isFavorite, onAddFavorite }) {
         >
           {loading ? 'Buscando...' : 'Buscar'}
         </Button>
+
         {error && (
           <Box sx={{ mt: 1, color: 'error.main', fontSize: 14 }}>
             {error}
@@ -92,24 +88,37 @@ function Search({ isFavorite, onAddFavorite }) {
         )}
       </Box>
 
-      {/* Only render SearchResult if there is a successful result */}
-      {result && (
-        <Box sx={{ m: 2, maxWidth: 600, mx: 'auto' }}>
-          <SearchResult city={city} temps={result} />
-          {typeof isFavorite === 'function' &&
-            typeof onAddFavorite === 'function' &&
-            !isFavorite(city) && (
-              <Button
-                variant="outlined"
-                color="secondary"
-                onClick={() => onAddFavorite(city)}
-                startIcon={<FavoriteIcon />}
-                sx={{ mt: 2, width: '100%' }}
-              >
-                Agregar al Inicio
-              </Button>
-            )}
-        </Box>
+      {/* Grid de resultados */}
+      <Box
+        sx={{
+          m: 2,
+          maxWidth: 1200,
+          mx: 'auto',
+          display: 'grid',
+          gap: 2,
+          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+        }}
+      >
+        {results.map(({ location, temps }) => {
+          const label = `${location.name}${location.admin1 ? `, ${location.admin1}` : ''}, ${location.country_code}`;
+          return (
+            <SearchResult
+              key={`${location.id}-${location.latitude}-${location.longitude}`}
+              label={label}
+              location={location}
+              temps={temps}
+              isFavorite={isFavorite}
+              onAddFavorite={onAddFavorite}
+            />
+          );
+        })}
+      </Box>
+
+      {/* indicación de ordenamiento */}
+      {!!results.length && (
+        <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mb: 3 }}>
+          Ordenado por población (descendente).
+        </Typography>
       )}
     </>
   );

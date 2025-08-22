@@ -46,7 +46,7 @@ function App() {
         </Toolbar>
       </AppBar>
       <Toolbar />
-      <Container maxWidth="sm">
+      <Container maxWidth="md">
         <Routes>
           <Route path="/" element={<Home favorites={favorites} removeFavorite={removeFavorite} />} />
           <Route path="/search" element={<Search isFavorite={isFavorite} onAddFavorite={onAddFavorite} />} />
