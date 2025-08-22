@@ -1,84 +1,57 @@
-import { useState } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
-import { AppBar, Toolbar, Typography, IconButton, Drawer, List, ListItem, ListItemText, ListItemIcon, ListItemButton } from '@mui/material';
-import { Card, CardContent } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
+import { useMemo } from 'react';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import useLocalStorageState from 'use-local-storage-state';
+import { AppBar, Toolbar, Typography, Button, Container } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import SearchIcon from '@mui/icons-material/Search';
-import Weather from './components/Weather';
+import Home from './components/Home';
 import Search from './components/Search';
 
-function Home() {
-  return (
-    <Card sx={{ m: 2, maxWidth: 600, mx: "auto" }}>
-      <CardContent>
-        <Typography variant="h5" component="h2" gutterBottom>
-          Información del Clima
-        </Typography>
-        <Weather />
-      </CardContent>
-    </Card>
-  );
-}
-
 function App() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  // Favorites persisted
+  const [favorites, setFavorites] = useLocalStorageState('WeatherApp/Favorites', {
+    defaultValue: ['Santiago de Chile'],
+  });
 
-  const toggleDrawer = () => {
-    setDrawerOpen(!drawerOpen);
+  const isFavorite = (name) => favorites.includes(name);
+
+  const onAddFavorite = (name) => {
+    if (!name) return;
+    if (!favorites.includes(name)) setFavorites([...favorites, name]);
   };
+
+  const removeFavorite = (name) => {
+    setFavorites(favorites.filter((c) => c !== name));
+  };
+
+  const location = useLocation();
+  const title = useMemo(() => {
+    if (location.pathname === '/search') return 'Buscar ciudad';
+    return 'Clima';
+  }, [location.pathname]);
 
   return (
     <>
       <AppBar position="fixed">
         <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={toggleDrawer}
-            sx={{ mr: 2 }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            Weather App
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            {title}
           </Typography>
+          <Button color="inherit" component={Link} to="/" startIcon={<HomeIcon />}>
+            Inicio
+          </Button>
+          <Button color="inherit" component={Link} to="/search" startIcon={<SearchIcon />}>
+            Buscar
+          </Button>
         </Toolbar>
       </AppBar>
-      <Drawer
-        variant="temporary"
-        open={drawerOpen}
-        onClose={toggleDrawer}
-        ModalProps={{
-          keepMounted: true,
-        }}
-      >
-        <List>
-          <ListItem disablePadding>
-            <ListItemButton component={Link} to="/" onClick={toggleDrawer}>
-              <ListItemIcon>
-                <HomeIcon />
-              </ListItemIcon>
-              <ListItemText primary="Inicio" />
-            </ListItemButton>
-          </ListItem>
-
-          <ListItem disablePadding>
-            <ListItemButton component={Link} to="/search" onClick={toggleDrawer}>
-              <ListItemIcon>
-                <SearchIcon />
-              </ListItemIcon>
-              <ListItemText primary="Buscar" />
-            </ListItemButton>
-          </ListItem>
-        </List>
-      </Drawer>
       <Toolbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/search" element={<Search />} />
-      </Routes>
+      <Container maxWidth="sm">
+        <Routes>
+          <Route path="/" element={<Home favorites={favorites} removeFavorite={removeFavorite} />} />
+          <Route path="/search" element={<Search isFavorite={isFavorite} onAddFavorite={onAddFavorite} />} />
+        </Routes>
+      </Container>
     </>
   );
 }

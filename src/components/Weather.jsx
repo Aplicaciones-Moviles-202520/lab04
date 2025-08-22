@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import fetchWeather from '../api/weatherApi';
+import PropTypes from 'prop-types';
 
-const Weather = () => {
+const Weather = ({ location = 'Santiago de Chile' } ) => {
   const [weather, setWeather] = useState(null);     // objeto de datos
   const [loading, setLoading] = useState(true);     // estado de carga
   const [error, setError] = useState('');           // mensaje de error
@@ -14,7 +15,9 @@ const Weather = () => {
       try {
         setLoading(true);
         setError('');
-        const temps = await fetchWeather('Santiago de Chile'); // Open‑Meteo version
+        const encodedLocation = encodeURIComponent(location);
+        console.log(`Fetching weather for: ${location}`);
+        const temps = await fetchWeather(location); // Open‑Meteo version
 
         if (!isMounted) return;
 
@@ -82,6 +85,10 @@ const Weather = () => {
       )}
     </Box>
   );
+};
+
+Weather.propTypes = {
+  location: PropTypes.string,
 };
 
 export default Weather;

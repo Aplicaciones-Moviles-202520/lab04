@@ -1,23 +1,72 @@
 import axios from 'axios';
 
 // 1) Geocoding: nombre -> lat/lon
-async function geocodeCity(name) {
-  const url = 'https://geocoding-api.open-meteo.com/v1/search';
-  const { data } = await axios.get(url, {
-    params: {
-      name,
-      count: 1,
-      language: 'es',
-      format: 'json',
-    },
+
+// normaliza para comparar
+const norm = (s) =>
+  s?.toString().normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
+
+async function geocodeCity(input) {
+  // Parseo por coma
+  const parts = input.split(",").map(p => p.trim()).filter(Boolean);
+
+  let city = parts[0] || "";
+  let admin = null;
+  let cc = null; // countryCode
+
+  if (parts.length === 2) {
+    // Caso "Ciudad, CL" o "Ciudad, Chile"
+    const tail = parts[1];
+    if (/^[A-Za-z]{2}$/.test(tail)) cc = tail.toUpperCase(); // ISO-2 detectado
+    // Si no es ISO-2, lo dejamos en null y confiamos en 'name'
+  } else if (parts.length >= 3) {
+    // Caso "Ciudad, Estado/Región, CL"
+    admin = parts[1];
+    const tail = parts[parts.length - 1];
+    if (/^[A-Za-z]{2}$/.test(tail)) cc = tail.toUpperCase();
+    // name lo enriquecemos con el admin para reducir ambigüedad
+    city = `${city} ${admin}`;
+  }
+
+  const params = {
+    name: city,
+    count: 10,              // trae más resultados para poder filtrar
+    language: "es",
+    format: "json",
+    ...(cc ? { countryCode: cc } : {})
+  };
+
+  const resp = await axios.get("https://geocoding-api.open-meteo.com/v1/search", {
+    params,
+    validateStatus: () => true,
   });
-  if (!data?.results?.length) return null;
-  const c = data.results[0];
+
+  if (resp.status !== 200 || !resp.data?.results?.length) return null;
+
+  let results = resp.data.results;
+
+  // Si tenemos admin (estado/provincia), filtramos por admin1
+  if (admin) {
+    const adminN = norm(admin);
+    const filtered = results.filter(r => norm(r.admin1 || "")?.includes(adminN));
+    if (filtered.length) results = filtered;
+  }
+
+  // Heurística: prioriza ciudad de mayor población
+  results.sort((a, b) => (b.population || 0) - (a.population || 0));
+
+  // Retorna el mejor match
+  const best = results[0];
   return {
-    lat: c.latitude,
-    lon: c.longitude,
-    label: [c.name, c.admin1, c.country].filter(Boolean).join(', '),
-    timezone: c.timezone, // útil para formatear horas locales si quisieras
+    id: best.id,
+    name: best.name,
+    latitude: best.latitude,
+    longitude: best.longitude,
+    country: best.country,
+    country_code: best.country_code,
+    admin1: best.admin1,
+    timezone: best.timezone,
+    population: best.population
   };
 }
 
@@ -35,6 +84,9 @@ async function getForecast(lat, lon, timezone = 'auto') {
       forecast_days: 1, // solo hoy
     },
   });
+
+  console.log('Forecast lat lon:', lat, lon);
+  console.log('Forecast data:', data);
 
   const current = data?.current?.temperature_2m;
   const dailyMin = data?.daily?.temperature_2m_min?.[0];
@@ -84,11 +136,14 @@ async function getObservedToday(lat, lon, timezone = 'auto') {
 const fetchWeather = async (city) => {
   try {
     const geo = await geocodeCity(city);
+    console.log('Geocoding city:', city);
+    console.log('Geocoding result:', geo);
+
     if (!geo) return null;
 
     const [fc, obs] = await Promise.all([
-      getForecast(geo.lat, geo.lon, geo.timezone ?? 'auto'),
-      getObservedToday(geo.lat, geo.lon, geo.timezone ?? 'auto'),
+      getForecast(geo.latitude, geo.longitude, geo.timezone ?? 'auto'),
+      getObservedToday(geo.latitude, geo.longitude, geo.timezone ?? 'auto'),
     ]);
 
     // Escoge “actual” con fallback: forecast.current -> promedio últimas observaciones
