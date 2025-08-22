@@ -296,11 +296,71 @@ Este componente declara la barra superior (`AppBar`), el menú de navegación la
 
 ### Componente Home
 
-El componente `Home` corresponde a la ruta raíz `/`.
-Su estructura se basa en componentes de MUI como [`Card`](https://mui.com/material-ui/react-card/) y `CardContent`.
+El componente `Home` corresponde a la ruta raíz `/` y muestra un carrusel de las ciudades favoritas guardadas por el usuario.
+Cada ciudad se despliega en una tarjeta (`Card`) con un encabezado de color generado dinámicamente y el componente `Weather` en su interior.
 
-* El propósito de la tarjeta es contener el componente `Weather`.
-* `Home` funciona como una interfaz visual que muestra el clima actual usando `Weather`, dándole un formato consistente con MUI.
+#### Hooks utilizados
+
+* **`useRef`**:
+
+  * Se usa para referenciar el contenedor desplazable del carrusel (`scrollerRef`).
+  * También para manejar banderas internas en el drag-to-scroll (por ejemplo `dragging`, `startX`, `startScrollLeft`).
+  * Esto permite implementar el desplazamiento manual con el mouse al arrastrar.
+
+* **`useEffect`**:
+
+  * Observa cambios en la lista de favoritos (`favorites.length`).
+  * Garantiza que al agregarse una nueva ciudad el scroll no quede “fuera de rango” y se ajuste suavemente al final.
+
+* **`useMemo`**:
+
+  * Calcula dinámicamente cuánto debe desplazarse el carrusel al hacer click en las flechas de navegación, en función del ancho visible del contenedor.
+
+#### Interfaz y comportamiento
+
+* Si no hay ciudades favoritas, se muestra un mensaje central invitando al usuario a agregarlas desde la vista **Buscar**.
+* Cuando hay favoritos:
+
+  * Se despliegan tarjetas en un **carrusel horizontal** que soporta:
+
+    * **Botones de flecha** (izquierda y derecha) para navegar.
+    * **Arrastre con el mouse** (drag-to-scroll).
+  * Cada tarjeta incluye:
+
+    * Un encabezado con el nombre de la ciudad y un botón para **eliminarla** de favoritos.
+    * El componente `Weather`, que muestra los datos climáticos de la ubicación.
+
+#### Uso del atributo `sx`
+
+En la mayoría de los componentes de MUI (`Box`, `Card`, `CardContent`, `Typography`, etc.) se emplea el atributo especial **`sx`**.
+Este atributo permite **incrustar reglas de estilo CSS directamente en el componente** usando objetos de JavaScript.
+Ventajas del uso de `sx`:
+
+* Se pueden definir propiedades estándar de CSS como `display`, `gap`, `padding`, `position`, etc.
+* Se pueden incorporar **reglas condicionales por breakpoints o media queries** usando las llaves que ofrece MUI (ej.: `@media (orientation: portrait)`).
+* Facilita aplicar estilos locales y específicos sin necesidad de crear clases CSS externas.
+
+Ejemplo del código:
+
+```jsx
+<Box
+  ref={scrollerRef}
+  sx={{
+    display: 'grid',
+    gridAutoFlow: 'column',
+    gap: '14px',
+    overflowX: 'auto',
+    scrollSnapType: 'x mandatory',
+    '@media (orientation: landscape)': {
+      gridAutoColumns: 'calc((100% - 14px) / 2)',
+    },
+  }}
+>
+  {/* contenido */}
+</Box>
+```
+
+En este ejemplo, `sx` concentra reglas que normalmente se definirían en un archivo CSS externo, pero aquí se expresan de manera declarativa junto al componente, para que puedas observar directamente cómo se afecta cada componente con las reglas y estilos definidos.
 
 ### Componente Search
 
