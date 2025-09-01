@@ -4,8 +4,10 @@ import useLocalStorageState from 'use-local-storage-state';
 import { AppBar, Toolbar, Typography, Button, Container } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import SearchIcon from '@mui/icons-material/Search';
+import PersonIcon from '@mui/icons-material/Person';
 import Home from './components/Home';
 import Search from './components/Search';
+import UserProfile from './components/UserProfile';
 
 function App() {
   // Favorites persisted
@@ -43,6 +45,9 @@ function App() {
           <Button color="inherit" component={Link} to="/search" startIcon={<SearchIcon />}>
             Buscar
           </Button>
+          <Button color="inherit" component={Link} to="/profile" startIcon={<PersonIcon />}>
+            Perfil
+          </Button>
         </Toolbar>
       </AppBar>
       <Toolbar />
@@ -50,6 +55,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home favorites={favorites} removeFavorite={removeFavorite} />} />
           <Route path="/search" element={<Search isFavorite={isFavorite} onAddFavorite={onAddFavorite} />} />
+          <Route path="/profile" element={<UserProfile />} />
         </Routes>
       </Container>
     </>
