@@ -1,13 +1,15 @@
 import { useMemo } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import useLocalStorageState from 'use-local-storage-state';
 import { AppBar, Toolbar, Typography, Button, Container } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import Home from './components/Home';
 import Search from './components/Search';
 import UserProfile from './components/UserProfile';
+import Horoscope from './components/Horoscope';
 
 function App() {
   // Favorites persisted
@@ -48,14 +50,18 @@ function App() {
           <Button color="inherit" component={Link} to="/profile" startIcon={<PersonIcon />}>
             Perfil
           </Button>
+          <Button color="inherit" component={Link} to="/horoscope" startIcon={<AutoAwesomeIcon />}>
+            Horóscopo
+          </Button>          
         </Toolbar>
       </AppBar>
       <Toolbar />
-      <Container maxWidth="md">
+      <Container component="main" maxWidth="md" sx={{ px: 2, py: 2 }}>
         <Routes>
           <Route path="/" element={<Home favorites={favorites} removeFavorite={removeFavorite} />} />
           <Route path="/search" element={<Search isFavorite={isFavorite} onAddFavorite={onAddFavorite} />} />
           <Route path="/profile" element={<UserProfile />} />
+          <Route path="/horoscope" element={<Horoscope profileTo="/profile" />} />
         </Routes>
       </Container>
     </>
