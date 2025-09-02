@@ -4,12 +4,14 @@ En este laboratorio continuaremos desarrollando la aplicación de clima con Reac
 
 ## Pasos iniciales
 
-En Google Cloud Platform (https://cloud.google.com) activa tu cuenta de desarrollador utilizando tus credenciales de `miuandes`. Una vez dentro de la plataforma, crea un proyecto, ponle nombre "icc4203-lab5". Luego, en el proyecto debes buscar y habilitar las siguientes APIs:
+En Google Cloud Platform (GCP; https://cloud.google.com) activa tu cuenta de desarrollador utilizando tus credenciales de `miuandes`. La plataforma te da un saldo de 300 USD para probar distintas APIs. No obstante esto, debes proveer un número de tarjeta de crédito para utilizar la plataforma. Nuestra recomendación es obtener una tarjeta de crédito de prepago en MACH de BCI, o en TENPO. Si no utilizas una cuenta en Google Cloud Platform, igualmente podrás correr las aplicaciones de frontend y backend de este laboratorio, pero con algunas limitaciones. En particular, no podrás utilizar los servicios de georeferenciación ni traducción de Google.
+
+Una vez dentro de la plataforma GCP, crea un proyecto, asígnale nombre "icc4203-lab5". Luego, en el proyecto debes buscar y habilitar las siguientes APIs:
 
 * Geocoding API
 * Cloud Translation API
 
-En la sección "Credentials" de la navegación podrás crear tus propias API keys para usar las dos APIs. Incluso podrías crear una sola API key y utilizarla con ambos servicios.
+En la sección "Credentials" de la navegación podrás crear tus propias API keys para usar las dos APIs. Incluso podrías crear una sola API key y utilizarla con ambos servicios. Puedes crear la key para uso sin restricciones, o restringir por servicios (los dos nombrados anteriormente).
 
 Una vez que cuentes con las APIs de Google necesarias, puedes instalar todas las dependencias del proyecto actual (asegúrate de contar con [NVM](https://github.com/nvm-sh/nvm) y Node 24, activando Yarn con el comando `corepack enable`):
 
@@ -19,7 +21,14 @@ yarn install
 
 Esto instalará todos los paquetes o módulos especificados en el archivo `package.json` que requiere la aplicación. Preferimos utilizar Yarn para gestión de módulos y dependencias de Javascript.
 
-Con esto, la aplicación estará lista para ejecutar:
+Luego, copia el archivo `.env.example` a `.env`. Rellena el archivo `.env` con las keys de GCP que hayas generado para utilizar las APIs:
+
+```sh
+GOOGLE_GEOCODING_API_KEY=api_key_para_geocoding
+GOOGLE_TRANSLATE_API_KEY=api_key_para_traducción
+```
+
+Finalmente, la aplicación estará lista para ejecxutar:
 
 ```sh
 yarn dev
@@ -116,7 +125,11 @@ La página index, y los componentes `App`, `Home`, `Weather`, `Search` y `Search
 
 ## Experimenta con el código
 
-1. Trabaja en la rama `main` completando el componente `UserProfile` con un campo que permita registrar la fecha de nacimiento. El usuario debe ser mayor de 13 años de edad (de lo contrario se debe desplegar error). Mantén la edad del usuario (`age`) sincronizada con su fecha de nacimiento. Muestra la fecha junto con la edad en la vista de `UserProfile`. Revisa la rama `solution` para ver el resultado deseado.
+1. Trabaja en la rama `main` completando el componente `UserProfile` con un campo que permita registrar la fecha de nacimiento. El usuario debe ser mayor de 13 años de edad (de lo contrario se debe desplegar error). Mantén la edad del usuario (`age`) sincronizada con su fecha de nacimiento. Muestra la fecha junto con la edad en la vista de `UserProfile`. Revisa la rama `solution` para ver el resultado deseado. El componente de MUI que debes utilizar es [`DatePicker`](https://mui.com/x/react-date-pickers/date-picker/). Para trabajar con fechas en formato `DD-MM-YYYY` puedes envolver `DatePicker` dentro de `LocalizationProvider`, con las siguientes props:
+```
+dateAdapter={AdapterDateFns} adapterLocale={es}
+```
+Lo anterior funciona porque `AdapterDateFns` es provisto por `@mui/x-date-pickers/AdapterDateFns`, y `es` está incluido desde `date-fns/locale`.
 2. Implementa el componente `Horoscope` utilizando el cliente de API de horóscopo en `src/api/horoscopeClient.js`, y el cliente de la API de traducción de Google, `src/api/translateClient.js`. También encontrarás la implementación completa de esto en la rama `solution`.
 
 ## Anexo: Lo básico de Vite
