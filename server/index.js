@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import fetch from 'node-fetch';
+import 'dotenv/config';
 
 const app = express();
 app.use(express.json());
@@ -23,36 +24,24 @@ if (!GOOGLE_KEY) {
   console.warn('[WARN] Falta GOOGLE_GEOCODING_API_KEY en entorno');
 }
 
-// Cache simple en memoria (TTL ms)
-const CACHE_TTL = 10 * 60 * 1000; // 10 min
-const cache = new Map();
-const cacheGet = (k) => {
-  const v = cache.get(k);
-  if (!v) return null;
-  const { t, data } = v;
-  if (Date.now() - t > CACHE_TTL) {
-    cache.delete(k);
-    return null;
+// helpers arriba del archivo
+const maskUrl = (url) => url.replace(/([?&]key=)[^&]+/, '$1***');
+
+async function fetchJsonWithTimeout(url, { headers, timeoutMs = 10000 } = {}) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, { headers, signal: ctrl.signal });
+    const text = await r.text();
+    let json = null;
+    try { json = JSON.parse(text); } catch {}
+    return { ok: r.ok, status: r.status, json, text };
+  } finally {
+    clearTimeout(id);
   }
-  return data;
-};
-const cacheSet = (k, data) => cache.set(k, { t: Date.now(), data });
+}
 
-// “Score” de tipos para elegir la mejor coincidencia
-const pickBestResult = (results = []) => {
-  if (!results.length) return null;
-  const score = (types = []) =>
-    types.includes('street_address') ? 100 :
-    (types.includes('premise') || types.includes('subpremise')) ? 90 :
-    types.includes('route') ? 80 :
-    types.includes('intersection') ? 70 :
-    (types.includes('sublocality') || types.includes('locality')) ? 60 :
-    types.includes('political') ? 50 : 10;
-
-  return [...results].sort((a, b) => score(b.types) - score(a.types))[0];
-};
-
-// ====== Geocoding: Reverse ======
+// ===== Reverse =====
 app.get('/api/geocode/reverse', async (req, res) => {
   try {
     const lat = Number(req.query.lat);
@@ -62,52 +51,60 @@ app.get('/api/geocode/reverse', async (req, res) => {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       return res.status(400).json({ error: 'invalid lat/lng' });
     }
-    if (!GOOGLE_KEY) return res.status(500).json({ error: 'Missing GOOGLE_GEOCODING_API_KEY' });
-
-    const key = `rev:${lat.toFixed(6)},${lng.toFixed(6)}:${language}`;
-    const cached = cacheGet(key);
-    if (cached) return res.json(cached);
 
     const u = new URL('https://maps.googleapis.com/maps/api/geocode/json');
     u.searchParams.set('latlng', `${lat},${lng}`);
     u.searchParams.set('language', language);
-    // Opcional: prioriza direcciones de calle
-    // u.searchParams.set('result_type', 'street_address|route');
+    // u.searchParams.set('result_type', 'street_address|route'); // opcional
     u.searchParams.set('key', GOOGLE_KEY);
 
-    const r = await fetch(u.toString(), {
+    const { ok, status, json } = await fetchJsonWithTimeout(u.toString(), {
       headers: { 'user-agent': 'WeatherApp-Server/1.0' },
-      timeout: 10000,
+      timeoutMs: 10000,
     });
-    const data = await r.json();
 
-    if (data.status !== 'OK') {
-      return res.status(502).json({ status: data.status, error: data.error_message || 'geocode-failed' });
+    console.log('[rev]', status, json?.status, maskUrl(u.toString()));
+
+    if (!ok) {
+      return res.status(502).json({
+        error: 'google-http',
+        httpStatus: status,
+        url: maskUrl(u.toString()),
+      });
     }
 
-    const best = pickBestResult(data.results);
-    if (!best) {
-      return res.json({ status: 'ZERO_RESULTS', formatted: null, results: [] });
+    if (json?.status !== 'OK') {
+      return res.status(502).json({
+        error: 'google-status',
+        googleStatus: json?.status,
+        errorMessage: json?.error_message,
+        url: maskUrl(u.toString()),
+      });
     }
+
+    const best = (json.results || [])[0]; // o tu pickBestResult si lo tienes
+    if (!best) return res.json({ status: 'ZERO_RESULTS', formatted: null, results: [] });
 
     const loc = best.geometry?.location || {};
-    const payload = {
-      status: data.status,
+    return res.json({
+      status: json.status,
       formatted: best.formatted_address,
       placeId: best.place_id,
       lat: typeof loc.lat === 'number' ? loc.lat : null,
       lng: typeof loc.lng === 'number' ? loc.lng : null,
       types: best.types,
       components: best.address_components,
-    };
-    cacheSet(key, payload);
-    return res.json(payload);
-  } catch (e) {
-    return res.status(502).json({ error: 'reverse-geocode-proxy-failed' });
+    });
+  } catch (err) {
+    console.error('[rev] fetch failed:', err?.name, err?.message);
+    return res.status(502).json({
+      error: 'reverse-geocode-proxy-failed',
+      message: err?.name === 'AbortError' ? 'timeout' : 'network',
+    });
   }
 });
 
-// ====== Geocoding: Forward ======
+// ===== Forward =====
 app.get('/api/geocode/forward', async (req, res) => {
   try {
     const address = (req.query.address || '').toString().trim();
@@ -116,44 +113,53 @@ app.get('/api/geocode/forward', async (req, res) => {
     if (!address) return res.status(400).json({ error: 'address required' });
     if (!GOOGLE_KEY) return res.status(500).json({ error: 'Missing GOOGLE_GEOCODING_API_KEY' });
 
-    const key = `fwd:${address}:${language}`;
-    const cached = cacheGet(key);
-    if (cached) return res.json(cached);
-
     const u = new URL('https://maps.googleapis.com/maps/api/geocode/json');
     u.searchParams.set('address', address);
     u.searchParams.set('language', language);
     u.searchParams.set('key', GOOGLE_KEY);
 
-    const r = await fetch(u.toString(), {
+    const { ok, status, json } = await fetchJsonWithTimeout(u.toString(), {
       headers: { 'user-agent': 'WeatherApp-Server/1.0' },
-      timeout: 10000,
+      timeoutMs: 10000,
     });
-    const data = await r.json();
 
-    if (data.status !== 'OK') {
-      return res.status(502).json({ status: data.status, error: data.error_message || 'geocode-failed' });
+    console.log('[fwd]', status, json?.status, maskUrl(u.toString()));
+
+    if (!ok) {
+      return res.status(502).json({
+        error: 'google-http',
+        httpStatus: status,
+        url: maskUrl(u.toString()),
+      });
+    }
+    if (json?.status !== 'OK') {
+      return res.status(502).json({
+        error: 'google-status',
+        googleStatus: json?.status,
+        errorMessage: json?.error_message,
+        url: maskUrl(u.toString()),
+      });
     }
 
-    const best = pickBestResult(data.results);
+    const best = (json.results || [])[0];
     const loc = best?.geometry?.location || {};
-    const payload = best ? {
-      status: data.status,
+    return res.json({
+      status: json.status,
       formatted: best.formatted_address,
       placeId: best.place_id,
       lat: typeof loc.lat === 'number' ? loc.lat : null,
       lng: typeof loc.lng === 'number' ? loc.lng : null,
       types: best.types,
       components: best.address_components,
-    } : { status: 'ZERO_RESULTS', formatted: null };
-    cacheSet(key, payload);
-    return res.json(payload);
-  } catch {
-    return res.status(502).json({ error: 'forward-geocode-proxy-failed' });
+    });
+  } catch (err) {
+    console.error('[fwd] fetch failed:', err?.name, err?.message);
+    return res.status(502).json({
+      error: 'forward-geocode-proxy-failed',
+      message: err?.name === 'AbortError' ? 'timeout' : 'network',
+    });
   }
 });
-
-// ====== Tus endpoints existentes (ejemplo) ======
 
 // Whitelist signos
 const SIGNS = new Set([
