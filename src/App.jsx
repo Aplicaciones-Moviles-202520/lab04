@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import useLocalStorageState from 'use-local-storage-state';
 import { AppBar, Toolbar, Typography, Button, Container } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';

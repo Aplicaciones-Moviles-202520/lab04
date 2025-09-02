@@ -6,6 +6,8 @@ import {
   Stack, CircularProgress, Alert
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
+import { fetchHoroscope } from '../api/horoscopeClient';
+import { translateToEs } from '../api/translateClient';
 
 // ---------- utils ----------
 const parseISODate = (s) => {
@@ -51,35 +53,6 @@ function reducer(state, action) {
   }
 }
 
-// ---------- API calls ----------
-async function fetchHoroscope(sign) {
-  const res = await fetch(`/api/horoscope?sign=${encodeURIComponent(sign)}&day=today`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = await res.json();
-  const text =
-    json?.data?.horoscope_data ||
-    json?.data?.horoscope ||
-    json?.horoscope ||
-    '';
-  if (!text) throw new Error('Formato de respuesta inesperado');
-  return text;
-}
-
-// Backend proxy to Google Translate (avoid exposing API key in the browser)
-async function translateToEs(text) {
-  const res = await fetch('/api/translate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ q: text, target: 'es' })
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const j = await res.json();
-  const t = j?.data?.translations?.[0]?.translatedText;
-  if (!t) throw new Error('Respuesta de traducción inválida');
-  return t;
-}
-
-// ---------- component ----------
 export default function Horoscope({ profileTo = '/perfil' }) {
   const [stored] = useLocalStorageState('WeatherApp/UserProfile', { defaultValue: null });
   const birthDate = stored?.birthDate || null;

@@ -11,7 +11,7 @@ import RoomIcon from '@mui/icons-material/Room';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { reverseGeocodeBrowser } from '../api/googleGeocodeBrowser';
+import { reverseGeocodeServer } from '../api/geocodeClient';
 import { es } from 'date-fns/locale';
 
 /* ---------- Helpers ---------- */
@@ -150,7 +150,7 @@ export default function UserProfile() {
       async (pos) => {
         try {
           const { latitude, longitude } = pos.coords;
-          const rev = await reverseGeocodeBrowser(latitude, longitude);
+          const rev = await reverseGeocodeServer(latitude, longitude);
           if (rev?.formatted) {
             formik.setFieldValue('address', rev.formatted, true);
             formik.setFieldValue('lat', rev.lat ?? latitude, false);
@@ -159,7 +159,7 @@ export default function UserProfile() {
           } else {
             setSnack({ open: true, sev: 'warning', msg: `No se encontró dirección (status: ${rev?.status || 'ZERO_RESULTS'}).` });
           }
-        } catch (_e) {
+        } catch {
           setSnack({ open: true, sev: 'error', msg: 'Error consultando el geocoder.' });
         } finally {
           setLocating(false);
