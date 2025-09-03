@@ -130,6 +130,7 @@ La página index, y los componentes `App`, `Home`, `Weather`, `Search` y `Search
 dateAdapter={AdapterDateFns} adapterLocale={es}
 ```
 Lo anterior funciona porque `AdapterDateFns` es provisto por `@mui/x-date-pickers/AdapterDateFns`, y `es` está incluido desde `date-fns/locale`.
+
 2. Implementa el componente `Horoscope` utilizando el cliente de API de horóscopo en `src/api/horoscopeClient.js`, y el cliente de la API de traducción de Google, `src/api/translateClient.js`. También encontrarás la implementación completa de esto en la rama `solution`.
 
 ## Anexo: Lo básico de Vite
